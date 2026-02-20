@@ -63,7 +63,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             end: Alignment.bottomRight,
             colors: [
               Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.primary.withOpacity(0.7),
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
             ],
           ),
         ),
@@ -80,16 +80,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black.withValues(alpha: 0.2),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Icons.directions_walk,
-                  size: 60,
-                  color: Color(0xFF4CAF50),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: Image.asset(
+                    'assets/icon/app_icon.png',
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
               const SizedBox(height: 32),

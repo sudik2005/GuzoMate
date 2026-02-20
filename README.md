@@ -1,4 +1,4 @@
-# byure
+# GuzoMate
 
 A new Flutter project.
 

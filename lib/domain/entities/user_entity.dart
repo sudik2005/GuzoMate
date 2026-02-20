@@ -14,6 +14,8 @@ class UserEntity {
   final DateTime? lastSeen;
   final LocationEntity? currentLocation;
   final SafetySettings safetySettings;
+  final Gender gender;
+  final GenderPreference genderPreference;
 
   UserEntity({
     required this.id,
@@ -30,6 +32,8 @@ class UserEntity {
     this.lastSeen,
     this.currentLocation,
     required this.safetySettings,
+    this.gender = Gender.male, // Default for migration, should be required in production
+    this.genderPreference = GenderPreference.women, // Default for migration
   });
 
   UserEntity copyWith({
@@ -47,6 +51,8 @@ class UserEntity {
     DateTime? lastSeen,
     LocationEntity? currentLocation,
     SafetySettings? safetySettings,
+    Gender? gender,
+    GenderPreference? genderPreference,
   }) {
     return UserEntity(
       id: id ?? this.id,
@@ -63,23 +69,56 @@ class UserEntity {
       lastSeen: lastSeen ?? this.lastSeen,
       currentLocation: currentLocation ?? this.currentLocation,
       safetySettings: safetySettings ?? this.safetySettings,
+      gender: gender ?? this.gender,
+      genderPreference: genderPreference ?? this.genderPreference,
     );
   }
+}
+
+/// Gender options
+enum Gender {
+  male,
+  female,
+}
+
+/// Gender preference options
+enum GenderPreference {
+  men,
+  women,
+  both,
 }
 
 /// Walking preferences for a user
 class WalkingPreferences {
   final WalkingPace pace;
   final double preferredDistanceKm;
+  final double searchRadiusKm; // Search radius for finding walking buddies
   final List<TerrainType> preferredTerrains;
   final List<String> preferredTimes; // e.g., ["morning", "evening"]
 
   WalkingPreferences({
     required this.pace,
     required this.preferredDistanceKm,
+    this.searchRadiusKm = 10.0, // Default 10km
     required this.preferredTerrains,
     required this.preferredTimes,
   });
+
+  WalkingPreferences copyWith({
+    WalkingPace? pace,
+    double? preferredDistanceKm,
+    double? searchRadiusKm,
+    List<TerrainType>? preferredTerrains,
+    List<String>? preferredTimes,
+  }) {
+    return WalkingPreferences(
+      pace: pace ?? this.pace,
+      preferredDistanceKm: preferredDistanceKm ?? this.preferredDistanceKm,
+      searchRadiusKm: searchRadiusKm ?? this.searchRadiusKm,
+      preferredTerrains: preferredTerrains ?? this.preferredTerrains,
+      preferredTimes: preferredTimes ?? this.preferredTimes,
+    );
+  }
 }
 
 enum WalkingPace {

@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:byure/domain/entities/chat_entity.dart';
 import 'package:byure/presentation/widgets/chat_list_item.dart';
+import 'package:byure/presentation/widgets/mesh_gradient_background.dart';
+import 'package:byure/core/theme/app_theme.dart';
+import 'package:byure/presentation/providers/navigation_provider.dart';
+import 'package:byure/services/chat_service.dart';
+import 'package:byure/presentation/providers/auth_provider.dart';
 
 class ChatListScreen extends ConsumerStatefulWidget {
   const ChatListScreen({super.key});
@@ -11,60 +17,131 @@ class ChatListScreen extends ConsumerStatefulWidget {
 }
 
 class _ChatListScreenState extends ConsumerState<ChatListScreen> {
-  // TODO: Replace with actual provider
-  List<ChatEntity> _chats = [];
+  final ChatService _chatService = ChatService();
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentUser = ref.watch(currentUserProvider);
+
+    if (currentUser == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Messages'),
+        title: const Text(
+          'Messages',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDark ? AppTheme.darkSurface : Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.search, size: 20),
+            ),
             onPressed: () {
               // TODO: Implement search
             },
           ),
+          const SizedBox(width: 8),
         ],
       ),
-      body: _chats.isEmpty
-          ? _buildEmptyState()
-          : ListView.builder(
-              itemCount: _chats.length,
+      body: MeshGradientBackground(
+        isDark: isDark,
+        child: StreamBuilder<List<ChatEntity>>(
+          stream: _chatService.getMatches(currentUser.id),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            }
+
+            final chats = snapshot.data ?? [];
+
+            if (chats.isEmpty) {
+              return _buildEmptyState(isDark);
+            }
+
+            return ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: chats.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
-                return ChatListItem(chat: _chats[index]);
+                final chat = chats[index];
+                return GestureDetector(
+                    onTap: () {
+                        // Navigate to Chat Screen (we will create this next)
+                        context.push('/chat/${chat.id}', extra: chat);
+                    },
+                    child: ChatListItem(chat: chat),
+                );
               },
-            ),
+            );
+          },
+        ),
+      ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(bool isDark) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.chat_bubble_outline,
-            size: 80,
-            color: Colors.grey.shade300,
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryTeal.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.chat_bubble_outline_rounded,
+              size: 64,
+              color: AppTheme.primaryTeal,
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Text(
             'No messages yet',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade600,
+              color: isDark ? Colors.white : Colors.black87,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
-            'Start a conversation with your matches!',
+            'Connect with nearby walkers to\nstart a conversation!',
             style: TextStyle(
-              color: Colors.grey.shade500,
+              fontSize: 16,
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
+              height: 1.5,
             ),
             textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton(
+            onPressed: () {
+              // Switch to Matches tab (index 1)
+              ref.read(homeTabIndexProvider.notifier).state = 1;
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryGreen,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: const Text('Find Buddies'),
           ),
         ],
       ),

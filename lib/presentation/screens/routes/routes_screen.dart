@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:byure/domain/entities/walk_invite_entity.dart';
+import 'package:byure/presentation/widgets/mesh_gradient_background.dart';
+
 
 class RoutesScreen extends ConsumerStatefulWidget {
   const RoutesScreen({super.key});
@@ -11,8 +13,8 @@ class RoutesScreen extends ConsumerStatefulWidget {
 
 class _RoutesScreenState extends ConsumerState<RoutesScreen> {
   // TODO: Replace with actual provider
-  List<RouteEntity> _routes = [];
-  bool _showPublicOnly = true;
+  final List<RouteEntity> _routes = [];
+  final bool _showPublicOnly = true;
 
   @override
   Widget build(BuildContext context) {
@@ -28,15 +30,18 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
           ),
         ],
       ),
-      body: _routes.isEmpty
-          ? _buildEmptyState()
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _routes.length,
-              itemBuilder: (context, index) {
-                return _buildRouteCard(_routes[index]);
-              },
-            ),
+      body: MeshGradientBackground(
+        isDark: Theme.of(context).brightness == Brightness.dark,
+        child: _routes.isEmpty
+            ? _buildEmptyState()
+            : ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _routes.length,
+                itemBuilder: (context, index) {
+                  return _buildRouteCard(_routes[index]);
+                },
+              ),
+      ),
     );
   }
 

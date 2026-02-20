@@ -2,17 +2,21 @@ import 'package:byure/presentation/screens/chat/chat_list_screen.dart';
 import 'package:byure/presentation/screens/map/map_screen.dart';
 import 'package:byure/presentation/screens/matches/matches_screen.dart';
 import 'package:byure/presentation/screens/profile/profile_screen.dart';
+import 'package:byure/core/theme/app_theme.dart';
+import 'package:byure/presentation/widgets/mesh_gradient_background.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:byure/presentation/providers/navigation_provider.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  // Local state removed in favor of provider
 
   final List<Widget> _screens = [
     const _MapTab(),
@@ -23,38 +27,116 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentIndex = ref.watch(homeTabIndexProvider);
+
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+      extendBody: true, // Key for floating effect
+      body: MeshGradientBackground(
+        isDark: isDark,
+        child: IndexedStack(
+          index: currentIndex,
+          children: _screens,
+        ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() => _currentIndex = index);
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Map',
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.only(left: 24, right: 24, bottom: 24),
+        child: Container(
+          height: 70,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.favorite_outline),
-            selectedIcon: Icon(Icons.favorite),
-            label: 'Matches',
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildNavItem(
+                icon: Icons.map_outlined,
+                activeIcon: Icons.map_rounded,
+                label: 'Map',
+                index: 0,
+                currentIndex: currentIndex,
+              ),
+              _buildNavItem(
+                icon: Icons.people_outline_rounded,
+                activeIcon: Icons.people_rounded,
+                label: 'Buddies',
+                index: 1,
+                currentIndex: currentIndex,
+              ),
+              _buildNavItem(
+                icon: Icons.chat_bubble_outline_rounded,
+                activeIcon: Icons.chat_bubble_rounded,
+                label: 'Chat',
+                index: 2,
+                currentIndex: currentIndex,
+              ),
+              _buildNavItem(
+                icon: Icons.person_outline_rounded,
+                activeIcon: Icons.person_rounded,
+                label: 'Profile',
+                index: 3,
+                currentIndex: currentIndex,
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline),
-            selectedIcon: Icon(Icons.chat_bubble),
-            label: 'Chat',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+    required int index,
+    required int currentIndex,
+  }) {
+    final isSelected = currentIndex == index;
+    
+    return GestureDetector(
+      onTap: () {
+        ref.read(homeTabIndexProvider.notifier).state = index;
+      },
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutBack,
+        width: isSelected ? 80 : 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primaryGreen.withValues(alpha: 0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isSelected ? activeIcon : icon,
+              color: isSelected ? AppTheme.primaryGreen : Colors.grey.shade500,
+              size: 24,
+            ),
+            if (isSelected) 
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Container(
+                  width: 4,
+                  height: 4,
+                  decoration: const BoxDecoration(
+                    color: AppTheme.primaryGreen,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -96,5 +178,3 @@ class _ProfileTab extends StatelessWidget {
     return const ProfileScreen();
   }
 }
-
-

@@ -97,7 +97,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                         end: Alignment.bottomRight,
                         colors: [
                           Theme.of(context).colorScheme.primary,
-                          Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(20),
@@ -124,7 +124,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                           'Unlock unlimited walks and premium features',
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -141,7 +141,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                   _buildFeatureItem(
                     Icons.chat,
                     'Unlimited Messaging',
-                    'Chat with all your matches without limits',
+                    'Chat with all your walking buddies without limits',
                   ),
                   _buildFeatureItem(
                     Icons.filter_alt,
@@ -237,7 +237,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(

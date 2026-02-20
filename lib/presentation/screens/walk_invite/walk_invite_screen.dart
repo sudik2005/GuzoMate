@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:byure/services/user_service.dart';
 import 'package:byure/services/subscription_service.dart';
 import 'package:byure/domain/entities/user_entity.dart';
 import 'package:byure/presentation/providers/auth_provider.dart';
+import 'package:byure/services/auth_service.dart';
 import 'package:byure/presentation/widgets/route_selector.dart';
 
 class WalkInviteScreen extends ConsumerStatefulWidget {
@@ -37,7 +39,13 @@ class _WalkInviteScreenState extends ConsumerState<WalkInviteScreen> {
   Future<void> _loadUserAndCheckLimit() async {
     try {
       final user = await _userService.getUserById(widget.userId);
-      final currentUser = ref.read(currentUserProvider);
+      AuthUser? currentUser;
+      try {
+        currentUser = ref.read(currentUserProvider);
+      } catch (e) {
+        debugPrint('Error reading current user: $e');
+        return;
+      }
       
       if (currentUser != null) {
         final canSend = await _subscriptionService.canSendWalkInvite(currentUser.id);
@@ -98,8 +106,8 @@ class _WalkInviteScreenState extends ConsumerState<WalkInviteScreen> {
       _selectedTime!.minute,
     );
 
-    // TODO: Create walk invite in Firestore
-    // For now, just show success message
+    // TODO: Create walk invite in Firestore / Supabase
+    debugPrint('Sending invite with message: $_message for $scheduledTime');
     await _subscriptionService.recordWalkInviteSent(currentUser.id);
     
     if (mounted) {

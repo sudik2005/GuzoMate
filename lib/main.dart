@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
-import 'package:byure/core/config/firebase_config.dart';
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:byure/core/config/supabase_config.dart';
 import 'package:byure/core/theme/app_theme.dart';
 import 'package:byure/presentation/routing/app_router.dart';
 import 'package:byure/presentation/providers/theme_provider.dart';
@@ -14,48 +11,42 @@ import 'package:byure/presentation/providers/theme_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  _configureDatabaseFactory();
-  
-  // Initialize Firebase (with error handling for preview mode)
-  try {
-    await Firebase.initializeApp(
-      options: FirebaseConfig.currentPlatform,
-    );
-  } catch (e) {
-    // Firebase not configured yet - app will still run for UI preview
-    debugPrint('Firebase initialization failed: $e');
-    debugPrint('App running in preview mode - some features may not work');
-  }
-  
-  // Set preferred orientations
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-  
-  runApp(
-    const ProviderScope(
-      child: GuzoMateApp(),
-    ),
-  );
-}
-
-void _configureDatabaseFactory() {
-  if (kIsWeb) {
-    databaseFactory = databaseFactoryFfiWeb;
-    return;
-  }
-
-  const desktopPlatforms = {
-    TargetPlatform.windows,
-    TargetPlatform.linux,
-    TargetPlatform.macOS,
+  // Add error handling for Flutter framework errors
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('Flutter Error: ${details.exception}');
+    debugPrint('Stack trace: ${details.stack}');
   };
 
-  if (desktopPlatforms.contains(defaultTargetPlatform)) {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
+  // Handle platform errors
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('Platform Error: $error');
+    debugPrint('Stack trace: $stack');
+    return true;
+  };
+
+  // Initialize Supabase
+  try {
+    await Supabase.initialize(
+      url: SupabaseConfig.url,
+      anonKey: SupabaseConfig.anonKey,
+    );
+    debugPrint('Supabase initialized successfully');
+  } catch (e) {
+    debugPrint('Supabase initialization failed: $e');
   }
+
+  // Set preferred orientations
+  try {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  } catch (e) {
+    debugPrint('Failed to set preferred orientations: $e');
+  }
+
+  runApp(const ProviderScope(child: GuzoMateApp()));
 }
 
 class GuzoMateApp extends ConsumerWidget {
@@ -76,5 +67,3 @@ class GuzoMateApp extends ConsumerWidget {
     );
   }
 }
-
-

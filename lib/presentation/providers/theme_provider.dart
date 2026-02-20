@@ -7,7 +7,7 @@ final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>(
 );
 
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
-  ThemeModeNotifier() : super(ThemeMode.system) {
+  ThemeModeNotifier() : super(ThemeMode.light) {
     _loadThemeMode();
   }
 
@@ -17,7 +17,13 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
     final prefs = await SharedPreferences.getInstance();
     final themeIndex = prefs.getInt(_themeKey);
     if (themeIndex != null) {
-      state = ThemeMode.values[themeIndex];
+      final mode = ThemeMode.values[themeIndex];
+      // If system was selected previously, default to light
+      if (mode == ThemeMode.system) {
+        state = ThemeMode.light;
+      } else {
+        state = mode;
+      }
     }
   }
 

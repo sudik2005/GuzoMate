@@ -85,15 +85,15 @@ class MatchCard extends StatelessWidget {
                       Row(
                         children: [
                           Icon(
-                            Icons.favorite,
+                            Icons.directions_walk,
                             size: 14,
-                            color: Colors.red.shade300,
+                            color: Colors.green.shade400,
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${(match.compatibilityScore! * 100).toInt()}% match',
+                            '${(match.compatibilityScore! * 100).toInt()}% compatible',
                             style: TextStyle(
-                              color: Colors.red.shade300,
+                              color: Colors.green.shade400,
                               fontSize: 12,
                             ),
                           ),
@@ -102,7 +102,7 @@ class MatchCard extends StatelessWidget {
                     ],
                     const SizedBox(height: 4),
                     Text(
-                      'Matched ${_formatDate(match.matchedAt)}',
+                      'Connected ${_formatDate(match.matchedAt)}',
                       style: TextStyle(
                         color: Colors.grey.shade500,
                         fontSize: 12,

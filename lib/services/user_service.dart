@@ -1,20 +1,23 @@
-import 'dart:math' as math;
-import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:byure/data/models/user_model.dart';
 import 'package:byure/domain/entities/user_entity.dart';
 import 'package:byure/services/location_service.dart';
+import 'package:byure/services/active_walker_service.dart';
+import 'package:byure/domain/entities/active_walker_entity.dart';
 
-/// Service for managing user data
+/// Service for managing user data via Supabase
 class UserService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final _supabase = Supabase.instance.client;
   final LocationService _locationService = LocationService();
+  final ActiveWalkerService _activeWalkerService = ActiveWalkerService();
 
   /// Get user by ID
   Future<UserEntity?> getUserById(String userId) async {
     try {
-      final doc = await _firestore.collection('users').doc(userId).get();
-      if (!doc.exists) return null;
-      return UserModel.fromFirestore(doc).toEntity();
+      final response = await _supabase.from('users').select().eq('id', userId).maybeSingle();
+      if (response == null) return null;
+      return UserModel.fromJson(response).toEntity();
     } catch (e) {
       throw Exception('Failed to get user: $e');
     }
@@ -24,94 +27,233 @@ class UserService {
   Future<void> createOrUpdateUser(UserEntity user) async {
     try {
       final model = UserModel.fromEntity(user);
-      await _firestore.collection('users').doc(user.id).set(
-            model.toFirestore(),
-            SetOptions(merge: true),
-          );
+      // upsert: conflict on 'id'
+      await _supabase.from('users').upsert(model.toJson());
     } catch (e) {
       throw Exception('Failed to create/update user: $e');
     }
   }
 
-  /// Update user location
+  /// Alias for createOrUpdateUser
+  Future<void> updateUser(UserEntity user) async {
+    await createOrUpdateUser(user);
+    
+    // Propagate updates to active walker if necessary.
+    // In Supabase, we JOIN active_walkers with users, so we don't strictly NEED 
+    // to denormalize name/photo into active_walkers.
+    // However, if the active walker table relies on 'is_premium' for coloring logic, sync that.
+    // Our RPC 'upsert_active_walker' takes 'is_prem'.
+    /*
+    final isActive = await _activeWalkerService.isUserActiveWalker(user.id);
+    if (isActive) {
+       // Refresh just to sync premium status or other fields if we denormalized any
+    }
+    */
+  }
+
+  /// Update user location (Profile only, different from Active Walker)
   Future<void> updateUserLocation(String userId) async {
     try {
       final location = await _locationService.getCurrentLocation();
       if (location != null) {
-        await _firestore.collection('users').doc(userId).update({
-          'currentLocation': {
+        await _supabase.from('users').update({
+          'current_location': {
             'latitude': location.latitude,
             'longitude': location.longitude,
-            'timestamp': FieldValue.serverTimestamp(),
           },
-          'lastSeen': FieldValue.serverTimestamp(),
-        });
+          'last_seen': DateTime.now().toIso8601String(),
+        }).eq('id', userId);
       }
     } catch (e) {
       throw Exception('Failed to update location: $e');
     }
   }
 
-  /// Get nearby users
+  /// Get nearby users (Non-Active Discovery)
+  /// Note: 'users' table doesn't have PostGIS index usually unless we add it.
+  /// For now, we fallback to non-geo or just return recent users.
   Future<List<UserEntity>> getNearbyUsers({
     required double latitude,
     required double longitude,
     required double radiusKm,
     int limit = 50,
   }) async {
-    try {
-      // Note: Firestore doesn't support native geoqueries
-      // In production, use GeoFirestore or similar solution
-      // This is a simplified version that fetches all available users
-      // and filters client-side (not recommended for large datasets)
+      // In this app, "Nearby Users" usually means Active Walkers.
+      // If we mean ALL users, we need a PostGIS column on 'users' table too.
+      // Our generic Active Walker RPC is better.
+      // Returning just recent users for now if this method is used for generic friendship.
       
-      final snapshot = await _firestore
-          .collection('users')
-          .where('isAvailableToWalk', isEqualTo: true)
-          .limit(limit)
-          .get();
+      final response = await _supabase.from('users')
+          .select()
+          .limit(limit);
+          
+      return (response as List).map((e) => UserModel.fromJson(e).toEntity()).toList();
+  }
 
-      final users = <UserEntity>[];
-      for (var doc in snapshot.docs) {
-        final user = UserModel.fromFirestore(doc).toEntity();
-        if (user.currentLocation != null) {
-          final distance = _calculateDistance(
-            latitude,
-            longitude,
-            user.currentLocation!.latitude,
-            user.currentLocation!.longitude,
-          );
-          if (distance <= radiusKm) {
-            users.add(user);
-          }
-        }
+  /// Toggle user's walking availability
+  Future<void> toggleWalkingAvailability({
+    required String userId,
+    required bool isAvailable,
+    double availabilityRadiusKm = 5.0,
+    String? currentActivity,
+    String? destinationHint,
+  }) async {
+    try {
+      // Logic: Setup Active Walker record
+      if (isAvailable) {
+        final location = await _locationService.getCurrentLocation();
+        if (location == null) throw Exception('Unable to get current location');
+
+        final user = await getUserById(userId);
+        if (user == null) throw Exception('User not found');
+
+        await _activeWalkerService.setActiveWalker(
+          user: user,
+          location: location,
+          availabilityRadiusKm: availabilityRadiusKm,
+          currentActivity: currentActivity,
+          destinationHint: destinationHint,
+        );
+      } else {
+        await _activeWalkerService.removeActiveWalker(userId);
       }
-      return users;
+      
+      // We don't necessarily update 'isAvailableToWalk' boolean in users table 
+      // because presence in active_walkers table IS the truth.
     } catch (e) {
-      throw Exception('Failed to get nearby users: $e');
+      throw Exception('Failed to toggle walking availability: $e');
     }
   }
 
-  /// Calculate distance between two coordinates (Haversine formula)
-  double _calculateDistance(
-    double lat1,
-    double lon1,
-    double lat2,
-    double lon2,
-  ) {
-    const double earthRadius = 6371; // km
-    final dLat = _toRadians(lat2 - lat1);
-    final dLon = _toRadians(lon2 - lon1);
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(_toRadians(lat1)) *
-            math.cos(_toRadians(lat2)) *
-            math.sin(dLon / 2) *
-            math.sin(dLon / 2);
-    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-    return earthRadius * c;
+  /// Update location for both user profile and active walker (if active)
+  Future<void> updateLocationForWalking(String userId) async {
+    try {
+      final location = await _locationService.getCurrentLocation();
+      if (location == null) throw Exception('Unable to get current location');
+
+      // Update basic profile location
+      await updateUserLocation(userId);
+
+      // Update active walker if active
+      final isActive = await _activeWalkerService.isUserActiveWalker(userId);
+      if (isActive) {
+        await _activeWalkerService.updateActiveWalkerLocation(
+          userId: userId,
+          location: location,
+        );
+      }
+    } catch (e) {
+      throw Exception('Failed to update location: $e');
+    }
   }
 
-  double _toRadians(double degrees) => degrees * (math.pi / 180.0);
+  /// Get nearby active walkers for a user (Filtered by Preference)
+  Future<List<ActiveWalkerWithDistance>> getNearbyWalkersForUser({
+    required String userId,
+    required double radiusKm,
+    LocationEntity? currentLocation,
+    int limit = 50,
+  }) async {
+    try {
+      final user = await getUserById(userId);
+      double lat, long;
+
+      if (currentLocation != null) {
+        lat = currentLocation.latitude;
+        long = currentLocation.longitude;
+      } else if (user?.currentLocation != null) {
+        lat = user!.currentLocation!.latitude;
+        long = user.currentLocation!.longitude;
+      } else {
+        // Fallback to simpler query if no location known?
+         // Or getting location from service
+         final loc = await _locationService.getCurrentLocation();
+         if (loc == null) return [];
+         lat = loc.latitude;
+         long = loc.longitude;
+      }
+      
+      final nearbyWalkers = await _activeWalkerService.getNearbyWalkers(
+        latitude: lat,
+        longitude: long,
+        radiusKm: radiusKm,
+        excludeUserId: userId,
+        limit: limit * 2,
+      );
+
+      // Fetch IDs of users already swiped by this user
+      final swipedResponse = await _supabase
+          .from('swipes')
+          .select('target_id')
+          .eq('liker_id', userId);
+      
+      final swipedIds = (swipedResponse as List).map((e) => e['target_id'] as String).toSet();
+
+      if (user != null) {
+           return nearbyWalkers.where((start) {
+             if (swipedIds.contains(start.walker.userId)) return false;
+             return _isMatch(user, start.walker);
+           }).take(limit).toList();
+      }
+      return nearbyWalkers.where((w) => !swipedIds.contains(w.walker.userId)).take(limit).toList();
+    } catch (e) {
+      throw Exception('Failed to get nearby walkers: $e');
+    }
+  }
+
+  /// Stream nearby walkers for real-time updates (Filtered by Preference)
+  Stream<List<ActiveWalkerWithDistance>> streamNearbyWalkersForUser({
+    required String userId,
+    required double latitude,
+    required double longitude,
+    required double radiusKm,
+    int limit = 50,
+  }) {
+    // We defer to the polling stream in ActiveWalkerService
+    return _activeWalkerService.streamNearbyWalkers(
+      latitude: latitude,
+      longitude: longitude,
+      radiusKm: radiusKm,
+      excludeUserId: userId,
+      limit: limit * 2,
+    ).asyncMap((walkers) async {
+       try {
+         final user = await getUserById(userId);
+         if (user == null) return walkers; // Or empty?
+
+         return walkers.where((w) {
+           return _isMatch(user, w.walker);
+         }).take(limit).toList();
+       } catch (e) {
+         return [];
+       }
+    });
+  }
+
+  /// Strict Matching Algorithm
+  bool _isMatch(UserEntity me, ActiveWalkerEntity walker) {
+     bool matchesMyPref = false;
+     if (me.genderPreference == GenderPreference.both) {
+       matchesMyPref = true; // "I match with anyone"
+     } else if (me.genderPreference == GenderPreference.men && walker.gender == Gender.male) {
+       matchesMyPref = true;
+     } else if (me.genderPreference == GenderPreference.women && walker.gender == Gender.female) {
+       matchesMyPref = true;
+     }
+
+     bool matchesWalkerPref = false;
+     // Note: Walker's preference is critical too.
+     if (walker.genderPreference == GenderPreference.both) {
+       matchesWalkerPref = true; // "They match with anyone"
+     } else if (walker.genderPreference == GenderPreference.men && me.gender == Gender.male) {
+       matchesWalkerPref = true;
+     } else if (walker.genderPreference == GenderPreference.women && me.gender == Gender.female) {
+       matchesWalkerPref = true;
+     }
+
+     return matchesMyPref && matchesWalkerPref;
+  }
 }
+
 
 

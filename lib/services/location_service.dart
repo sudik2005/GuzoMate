@@ -18,19 +18,29 @@ class LocationService {
   /// Get current location
   Future<LocationEntity?> getCurrentLocation() async {
     try {
-      final hasPermission = await requestLocationPermission();
-      if (!hasPermission) {
-        throw Exception('Location permission denied');
-      }
-
+      // Check if location services are enabled first
       final isEnabled = await isLocationServiceEnabled();
       if (!isEnabled) {
-        throw Exception('Location services are disabled');
+        throw Exception('Location services are disabled. Please enable location services in your device settings.');
+      }
+
+      // Check current permission status
+      final permissionStatus = await Permission.location.status;
+      
+      if (permissionStatus.isDenied) {
+        // Request permission
+        final hasPermission = await requestLocationPermission();
+        if (!hasPermission) {
+          throw Exception('Location permission is required to find nearby walkers. Please grant location permission in app settings.');
+        }
+      } else if (permissionStatus.isPermanentlyDenied) {
+        throw Exception('Location permission is permanently denied. Please enable it in app settings.');
       }
 
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
         ),
       );
 
@@ -40,7 +50,7 @@ class LocationService {
         timestamp: DateTime.now(),
       );
     } catch (e) {
-      return null;
+      rethrow;
     }
   }
 
