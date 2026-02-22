@@ -1,4 +1,4 @@
-package com.example.byure
+package com.guzomate.app
 
 import io.flutter.embedding.android.FlutterActivity
 
