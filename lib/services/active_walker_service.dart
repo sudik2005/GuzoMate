@@ -106,9 +106,9 @@ class ActiveWalkerService {
   }) async {
     try {
       final response = await _supabase.rpc('get_nearby_walkers', params: {
-        'lat': latitude,
-        'long': longitude,
-        'radius_meters': radiusKm * 1000,
+        'p_lat': latitude,
+        'p_long': longitude,
+        'p_radius_meters': radiusKm * 1000,
       });
 
       final List<dynamic> data = response as List<dynamic>;
