@@ -46,7 +46,9 @@ class ChatListItem extends StatelessWidget {
                       : null,
                   child: chat.otherUserPhotoUrl == null
                       ? Text(
-                          chat.otherUserName?[0].toUpperCase() ?? '?',
+                          (chat.otherUserName != null && chat.otherUserName!.isNotEmpty)
+                              ? chat.otherUserName![0].toUpperCase()
+                              : '?',
                           style: TextStyle(
                             color: AppTheme.primaryTeal,
                             fontWeight: FontWeight.bold,

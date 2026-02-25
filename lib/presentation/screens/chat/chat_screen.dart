@@ -71,7 +71,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ? NetworkImage(widget.chat.otherUserPhotoUrl!)
                   : null,
               child: widget.chat.otherUserPhotoUrl == null
-                  ? Text(widget.chat.otherUserName?[0] ?? '?')
+                  ? Text((widget.chat.otherUserName != null && widget.chat.otherUserName!.isNotEmpty)
+                      ? widget.chat.otherUserName![0]
+                      : '?')
                   : null,
             ),
             const SizedBox(width: 12),
