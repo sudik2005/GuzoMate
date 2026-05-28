@@ -74,6 +74,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
     }
   }
 
+  Future<void> _handleForgotPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid email first')),
+      );
+      return;
+    }
+
+    try {
+      final authService = ref.read(authServiceProvider);
+      await authService.sendPasswordResetEmail(email);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password reset email sent')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send reset email: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Determine colors based on brightness
@@ -212,7 +237,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: TextButton(
-                                  onPressed: () {}, // TODO: Implement
+                                  onPressed: _handleForgotPassword,
                                   child: const Text('Forgot Password?'),
                                 ),
                               ),

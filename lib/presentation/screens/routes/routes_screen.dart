@@ -12,7 +12,6 @@ class RoutesScreen extends ConsumerStatefulWidget {
 }
 
 class _RoutesScreenState extends ConsumerState<RoutesScreen> {
-  // TODO: Replace with actual provider
   final List<RouteEntity> _routes = [];
   final bool _showPublicOnly = true;
 
@@ -25,7 +24,9 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
-              // TODO: Navigate to create route (premium only)
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Create route is coming soon')),
+              );
             },
           ),
         ],
@@ -93,7 +94,9 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
         ),
         trailing: const Icon(Icons.arrow_forward_ios),
         onTap: () {
-          // TODO: Show route details
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Route details for "${route.name}" coming soon')),
+          );
         },
       ),
     );

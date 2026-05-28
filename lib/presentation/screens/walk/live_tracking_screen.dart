@@ -245,7 +245,17 @@ class _LiveTrackingScreenState extends ConsumerState<LiveTrackingScreen> {
                       ),
                       TextButton(
                         onPressed: () {
-                          // TODO: Emergency SOS or share location
+                          final buddyName = widget.buddy.name;
+                          final destination = _buddyLocation != null
+                              ? '${_buddyLocation!.latitude.toStringAsFixed(5)}, ${_buddyLocation!.longitude.toStringAsFixed(5)}'
+                              : 'updating...';
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Trip update with $buddyName: ETA $_eta, distance ${_distanceKm.toStringAsFixed(1)} km, buddy at $destination',
+                              ),
+                            ),
+                          );
                         },
                         child: const Text('Share Trip'),
                       ),

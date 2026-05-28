@@ -115,7 +115,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: const Text('Privacy & Safety'),
               trailing: const Icon(Icons.arrow_forward_ios),
               onTap: () {
-                // TODO: Navigate to privacy settings
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Privacy settings coming soon')),
+                );
               },
             ),
             
@@ -210,7 +212,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: const Text('Notifications'),
               trailing: const Icon(Icons.arrow_forward_ios),
               onTap: () {
-                // TODO: Navigate to notification settings
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Notification settings coming soon')),
+                );
               },
             ),
             // Subscription
@@ -251,7 +255,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: const Text('Help & Support'),
               trailing: const Icon(Icons.arrow_forward_ios),
               onTap: () {
-                // TODO: Navigate to help
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Help center coming soon')),
+                );
               },
             ),
             ListTile(
@@ -259,7 +265,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: const Text('About'),
               trailing: const Icon(Icons.arrow_forward_ios),
               onTap: () {
-                // TODO: Show about dialog
+                showAboutDialog(
+                  context: context,
+                  applicationName: 'GuzoMate',
+                  applicationVersion: '1.0.0',
+                  applicationLegalese: 'Walk Together, Connect Forever',
+                );
               },
             ),
 

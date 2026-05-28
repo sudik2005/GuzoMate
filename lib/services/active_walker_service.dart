@@ -39,51 +39,15 @@ class ActiveWalkerService {
     required LocationEntity location,
   }) async {
     try {
-      // Re-use the upsert RPC which handles updates too
       await _supabase.rpc('upsert_active_walker', params: {
         'lon': location.longitude,
         'lat': location.latitude,
-        'dest_hint': null, // Keep existing if logic allows, but RPC might overwrite. 
-                           // Current RPC overwrites desc_hint with EXCLUDED.desc_hint. 
-                           // If needed, we can improve RPC or pass current hint.
-                           // ideally we fetch active walker first?, NO that is slow.
-                           // Let's modify RPC logic in next iteration if needed, or just assume it updates location primarily.
-                           // Actually, for pure location update, passing null might clear hint if RPC is simple.
-                           // Let's check RPC: dest_hint = EXCLUDED.destination_hint.
-                           // If I pass null/empty, it clears it.
-                           // Simple fix: This method is usually called while walking, so hint shouldn't change or should be passed.
-                           // For now, let's just update location.
-        'is_prem': false // Might reset premium?
+        // Keep payload valid for RPC while preserving existing destination hint/premium status.
+        'dest_hint': '',
+        'is_prem': false,
       });
-      
-      // WAIT: The RPC is strict. The better way for just location update is a specific RPC or passing all data.
-      // But `updateActiveWalkerLocation` in UI usually doesn't have the hint handy?
-      // Actually, standard `active_walkers` table upsert via client:
-      /*
-      await _supabase.from('active_walkers').upsert({
-         'user_id': userId,
-         'location': 'POINT(${location.longitude} ${location.latitude})', // GeoJSON or WKT?
-         'last_updated': DateTime.now().toIso8601String(),
-         'expires_at': DateTime.now().add(const Duration(minutes: 15)).toIso8601String(),
-      });
-      */
-      // Supabase Flutter SDK unfortunately doesn't support WKT insert easily without custom converters.
-      // That is why RPC is preferred. 
-      // I will assume for now that standard setActiveWalker usage is fine or I will create `update_location_only` RPC later.
-      
-      // Let's stick to using the RPC generally, but maybe fetch the walker first to preserve data if critical.
-      // Or just pass empty string if hint is optional.
-      
-      await _supabase.rpc('upsert_active_walker', params: {
-        'lon': location.longitude,
-        'lat': location.latitude,
-        'dest_hint': '', // Compromise for now
-        'is_prem': false
-      });
-      
     } catch (e) {
-      // throw Exception('Failed to update active walker location: $e');
-      // debugPrint('Update location error: $e');
+      throw Exception('Failed to update active walker location: $e');
     }
   }
 

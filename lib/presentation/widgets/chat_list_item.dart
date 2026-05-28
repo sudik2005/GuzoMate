@@ -31,8 +31,7 @@ class ChatListItem extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
           onTap: () {
-            // TODO: Navigate to chat screen
-            context.push('/chat/${chat.id}');
+            context.push('/chat/${chat.id}', extra: chat);
           },
           child: Padding(
             padding: const EdgeInsets.all(12),

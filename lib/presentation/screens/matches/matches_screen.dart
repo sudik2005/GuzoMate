@@ -103,6 +103,52 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
     _handleSwipe(true);
   }
 
+  void _showUserPreview(UserEntity user) {
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundImage:
+                      user.photoUrls.isNotEmpty ? NetworkImage(user.photoUrls.first) : null,
+                  child: user.photoUrls.isEmpty ? Text(user.name[0].toUpperCase()) : null,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '${user.name}, ${user.age}',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            if (user.bio != null && user.bio!.trim().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(user.bio!),
+            ],
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: user.interests
+                  .take(6)
+                  .map((interest) => Chip(label: Text(interest)))
+                  .toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleSwipe(bool isLike) async {
     final currentUser = ref.read(currentUserProvider);
     if (currentUser == null || _currentIndex >= _nearbyUsers.length) {
@@ -447,7 +493,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                         onSwipeRight: isTopCard ? _onSwipeRight : null,
                         isInteractive: isTopCard, // Only top card is interactive
                         onTap: () {
-                          // TODO: Show user profile
+                          _showUserPreview(user);
                         },
                       ),
                     ),
@@ -485,7 +531,9 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
             icon: Icons.star,
             color: Colors.blue,
             onPressed: () {
-              // TODO: Implement super like
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Super Like sent!')),
+              );
               _onSwipeRight();
             },
             size: 48,

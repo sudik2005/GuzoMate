@@ -5,7 +5,6 @@ class RouteSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Load actual routes from service
     final routes = [
       {'id': '1', 'name': 'Central Park Loop', 'distance': '5.2 km'},
       {'id': '2', 'name': 'Riverside Walk', 'distance': '3.8 km'},

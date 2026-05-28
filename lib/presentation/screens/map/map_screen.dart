@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:byure/services/location_service.dart';
 import 'package:byure/services/user_service.dart';
 import 'package:byure/domain/entities/user_entity.dart';
@@ -294,8 +295,8 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  // TODO: Send walk invite
                   Navigator.pop(context);
+                  context.push('/walk-invite/${walker.userId}');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
@@ -378,7 +379,11 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
                   );
                 }
               } catch (e) {
-                // Handle error
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to update availability: $e')),
+                  );
+                }
               }
             },
           ),

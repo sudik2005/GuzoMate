@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:byure/services/user_service.dart';
 import 'package:byure/services/subscription_service.dart';
 import 'package:byure/domain/entities/user_entity.dart';
 import 'package:byure/presentation/providers/auth_provider.dart';
 import 'package:byure/services/auth_service.dart';
 import 'package:byure/presentation/widgets/route_selector.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class WalkInviteScreen extends ConsumerStatefulWidget {
   final String userId;
@@ -20,6 +22,7 @@ class WalkInviteScreen extends ConsumerStatefulWidget {
 class _WalkInviteScreenState extends ConsumerState<WalkInviteScreen> {
   final UserService _userService = UserService();
   final SubscriptionService _subscriptionService = SubscriptionService();
+  final _supabase = Supabase.instance.client;
   
   UserEntity? _targetUser;
   bool _isLoading = true;
@@ -106,8 +109,15 @@ class _WalkInviteScreenState extends ConsumerState<WalkInviteScreen> {
       _selectedTime!.minute,
     );
 
-    // TODO: Create walk invite in Firestore / Supabase
-    debugPrint('Sending invite with message: $_message for $scheduledTime');
+    await _supabase.from('walk_invites').insert({
+      'from_user_id': currentUser.id,
+      'to_user_id': widget.userId,
+      'scheduled_time': scheduledTime.toIso8601String(),
+      'message': _message.trim().isEmpty ? null : _message.trim(),
+      'suggested_route_id': _selectedRouteId,
+      'status': 'pending',
+    });
+
     await _subscriptionService.recordWalkInviteSent(currentUser.id);
     
     if (mounted) {
@@ -134,7 +144,9 @@ class _WalkInviteScreenState extends ConsumerState<WalkInviteScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Navigate to paywall
+              if (mounted) {
+                context.push('/paywall');
+              }
             },
             child: const Text('Upgrade'),
           ),

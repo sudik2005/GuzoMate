@@ -45,7 +45,9 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
               child: const Icon(Icons.search, size: 20),
             ),
             onPressed: () {
-              // TODO: Implement search
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Chat search is coming soon')),
+              );
             },
           ),
           const SizedBox(width: 8),

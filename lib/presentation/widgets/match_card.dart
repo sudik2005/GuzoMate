@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:byure/domain/entities/match_entity.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
@@ -19,8 +18,9 @@ class MatchCard extends StatelessWidget {
     return Card(
       child: InkWell(
         onTap: () {
-          // TODO: Navigate to chat or profile
-          context.push('/chat');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Chat navigation for this card is coming soon')),
+          );
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -115,7 +115,9 @@ class MatchCard extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.arrow_forward_ios),
                 onPressed: () {
-                  // TODO: Navigate to chat
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Open chat action coming soon')),
+                  );
                 },
               ),
             ],
