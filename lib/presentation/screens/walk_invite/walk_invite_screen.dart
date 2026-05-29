@@ -8,7 +8,7 @@ import 'package:byure/domain/entities/user_entity.dart';
 import 'package:byure/presentation/providers/auth_provider.dart';
 import 'package:byure/services/auth_service.dart';
 import 'package:byure/presentation/widgets/route_selector.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthUser;
 
 class WalkInviteScreen extends ConsumerStatefulWidget {
   final String userId;
